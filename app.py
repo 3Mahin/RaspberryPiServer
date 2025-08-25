@@ -2,53 +2,18 @@ import streamlit as st
 import matplotlib.pyplot as plt    
 import numpy as np
 import random
-from streamlit_navigation_bar import st_navbar
-
-
-st.set_page_config(initial_sidebar_state="collapsed")
-
-pages = ["Home", "Contributors"]
-styles = {
-    "nav": {
-        "background-color": "rgb(255, 75, 75)",
-    },
-    "div": {
-        "max-width": "32rem",
-    },
-    "span": {
-        "border-radius": "0.5rem",
-        "color": "rgb(49, 51, 63)",
-        "margin": "0 0.125rem",
-        "padding": "0.4375rem 0.625rem",
-    },
-    "active": {
-        "background-color": "rgba(255, 255, 255, 0.25)",
-    },
-    "hover": {
-        "background-color": "rgba(255, 255, 255, 0.35)",
-    },
-}
-
-page = st_navbar(pages, styles=styles)
-st.write(page)
+import base64
 
 
 
-
-
-
+# Sidebar
 with st.sidebar:
-    st.write("Sidebar")
+    st.title("Navigation")
+    side_page = st.radio("Go to", ["Home", "Upload", "About"])
 
-
-st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Home", "Upload", "About"])
-
-if page == "Home":
-    st.subheader("Graph !!!")
-    st.set_page_config(page_title="Device Monitor", layout="centered")
-    
-
+# Main Content
+if side_page == "Home":
+    st.subheader(" Graph !!!")
 
     # Example: Simple sine wave
     x = np.linspace(0, 10, 100)
@@ -57,52 +22,75 @@ if page == "Home":
     fig, ax = plt.subplots()
     ax.plot(x, y, label="Sample Graph")
     ax.legend()
-
     st.pyplot(fig)
     
-    
+    st.subheader(" Device Information: ")
 
     on = st.toggle("Status")
-
     if on:
-        st.write("Activated!")
+        st.success("✅ Activated!")
+    else:
+        st.warning("⚠️ Deactivated")
 
-
-        
-        
-    curr_power = 69   # Example value
-    power_gen = 420   # Example value
-
-    st.write(f"**Curr Pow:** {curr_power} V")
-    st.write(f"**Pow Gen:** {power_gen} Wh")
+    # Example values
+    curr_power = 69
+    power_gen = 420
     
-    st.markdown(f"""
-    <div class="info-card">
-        <h4>⚡ Current Power</h4>
-        <p style="font-size:20px; color:#2196F3;"><b>{curr_power} V</b></p>
-    </div>
+    
+    
 
-    <div class="info-card">
-        <h4>🔋 Power Generated</h4>
-        <p style="font-size:20px; color:#FF9800;"><b>{power_gen} Wh</b></p>
-    </div>
-    """, unsafe_allow_html=True)
+    # ✅ Put custom HTML inside a container with limited width
+    with st.container():
+        st.markdown(f"""
+        <div style="padding:10px; border-radius:10px; background:#f9f9f9; margin:10px 0;">
+            <h4>⚡ Current Power</h4>
+            <p style="font-size:20px; color:#2196F3;"><b>{curr_power} V</b></p>
+        </div>
+        <div style="padding:10px; border-radius:10px; background:#f9f9f9; margin:10px 0;">
+            <h4>🔋 Power Generated</h4>
+            <p style="font-size:20px; color:#FF9800;"><b>{power_gen} Wh</b></p>
+        </div>
+        """, unsafe_allow_html=True)
 
-
+    # Refresh button
     if st.button("🔄 Refresh", type="primary"):
         new_power = random.randint(50, 100)
         new_gen = random.randint(300, 600)
         st.success(f"Refreshed! Curr Pow: {new_power} V, Pow Gen: {new_gen} Wh")
 
 
-    
-elif page == "Upload":
+elif side_page == "Upload":
     st.title("📂 Upload Files")
     uploaded_file = st.file_uploader("Choose a file", type=["txt", "csv", "jpg", "png"])
-    
     if uploaded_file:
         st.success(f"Uploaded file: {uploaded_file.name}")
         if uploaded_file.type == "text/plain":
             content = uploaded_file.read().decode("utf-8")
             st.text_area("File Content", content, height=200)
+
+def get_base64_of_bin_file(file_path):
+    """
+    Reads a file in binary mode and returns its Base64 encoded string.
+    """
+    with open(file_path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+image_path = "C:/DesktopFolders/summer2025/Courses(9th Semester)/cse331.1 MaQm/project/background.jpg"
+image_base64 = get_base64_of_bin_file(image_path)
+
+# ✅ Set background image using CSS
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/jpg;base64,{image_base64}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
