@@ -1,10 +1,61 @@
 import streamlit as st
 import matplotlib.pyplot as plt    
 import numpy as np
+import pandas as pd
 import random
 import base64
+import firebase_admin
+from firebase_admin import credentials, firestore
+from datetime import timedelta
+
+# Firebase Initialization
+try:
+    # Use the name of your provided JSON key file.
+    cred = credentials.Certificate(r"C:\Users\UseR\Desktop\Projects\CSE331 Final Project\cse331-77111-firebase-adminsdk-fbsvc-ef779cd6e3.json")
+    firebase_admin.initialize_app(cred)
+except ValueError:
+    pass
+
+# Get a reference to the Firestore database.
+db = firestore.client()
+
+# Modified Data Fetching Function
+@st.cache_data(ttl=60)
 
 
+# Temporary debugging function
+@st.cache_data(ttl=60)
+def fetch_firestore_data(collection_name):
+    latest_doc_query = db.collection(collection_name).order_by(
+        "timestamp", direction=firestore.Query.DESCENDING
+    ).limit(1)
+    
+    latest_docs = list(latest_doc_query.stream())
+
+    if not latest_docs:
+        return pd.DataFrame()
+
+    latest_timestamp = latest_docs[0].to_dict()['timestamp']
+    start_timestamp = latest_timestamp - timedelta(seconds=5)
+
+    docs_query = db.collection(collection_name).where(
+        "timestamp", ">=", start_timestamp
+    ).order_by("timestamp", direction=firestore.Query.ASCENDING)
+
+    docs = docs_query.stream()
+    
+    data = []
+    for doc in docs:
+        doc_data = doc.to_dict()
+        if 'timestamp' in doc_data and 'raw_data' in doc_data:
+            data.append(doc_data)
+
+    if not data:
+        return pd.DataFrame()
+
+    return pd.DataFrame(data)
+
+# Streamlit App Layout
 
 # Sidebar
 with st.sidebar:
@@ -13,33 +64,42 @@ with st.sidebar:
 
 # Main Content
 if side_page == "Home":
-    st.subheader(" Graph !!!")
+    st.subheader("Live Graph from Database")
 
-    # Example: Simple sine wave
-    x = np.linspace(0, 10, 100)
-    y = np.sin(x)
+    # Dynamic Graphing Logic
+    df = fetch_firestore_data('serial_data')
 
-    fig, ax = plt.subplots()
-    ax.plot(x, y, label="Sample Graph")
-    ax.legend()
-    st.pyplot(fig)
+    if not df.empty:
+
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+        fig, ax = plt.subplots()
+        
+        ax.plot(df['timestamp'], df['raw_data'], label="VOLTAGE (V)", marker='.')
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Voltage")
+        ax.legend()
+        ax.grid(True)
+        plt.xticks(rotation=45)
+        st.pyplot(fig)
+    else:
+        st.warning("No data found in the 'sensor_readings' collection. Waiting for data...")
+
+    # Functional Refresh Button
     
-    st.subheader(" Device Information: ")
+    if st.button("🔄 Refresh", type="primary"):
+        st.cache_data.clear()
+        st.rerun()
 
+    st.subheader(" Device Information: ")
     on = st.toggle("Status")
     if on:
         st.success("✅ Activated!")
     else:
         st.warning("⚠️ Deactivated")
 
-    # Example values
     curr_power = 69
     power_gen = 420
-    
-    
-    
-
-    # ✅ Put custom HTML inside a container with limited width
     with st.container():
         st.markdown(f"""
         <div style="padding:10px; border-radius:10px; background:#f9f9f9; margin:10px 0;">
@@ -52,45 +112,29 @@ if side_page == "Home":
         </div>
         """, unsafe_allow_html=True)
 
-    # Refresh button
-    if st.button("🔄 Refresh", type="primary"):
-        new_power = random.randint(50, 100)
-        new_gen = random.randint(300, 600)
-        st.success(f"Refreshed! Curr Pow: {new_power} V, Pow Gen: {new_gen} Wh")
-
-
 elif side_page == "Upload":
     st.title("📂 Upload Files")
-    uploaded_file = st.file_uploader("Choose a file", type=["txt", "csv", "jpg", "png"])
-    if uploaded_file:
-        st.success(f"Uploaded file: {uploaded_file.name}")
-        if uploaded_file.type == "text/plain":
-            content = uploaded_file.read().decode("utf-8")
-            st.text_area("File Content", content, height=200)
+    # ...
 
 def get_base64_of_bin_file(file_path):
-    """
-    Reads a file in binary mode and returns its Base64 encoded string.
-    """
     with open(file_path, "rb") as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
-image_path = "background.jpg"
-image_base64 = get_base64_of_bin_file(image_path)
-
-# ✅ Set background image using CSS
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-image: url("data:image/jpg;base64,{image_base64}");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+try:
+    image_path = "background.jpg"
+    image_base64 = get_base64_of_bin_file(image_path)
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/jpg;base64,{image_base64}");
+            background-size: cover;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+except FileNotFoundError:
+    st.warning("background.jpg not found. Skipping background image.")
 
