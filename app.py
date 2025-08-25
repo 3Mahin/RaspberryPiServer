@@ -11,7 +11,7 @@ from datetime import timedelta
 # Firebase Initialization
 try:
     # Use the name of your provided JSON key file.
-    cred = credentials.Certificate(r"C:\Users\UseR\Desktop\Projects\CSE331 Final Project\cse331-77111-firebase-adminsdk-fbsvc-ef779cd6e3.json")
+    cred = credentials.Certificate("cse331-77111-firebase-adminsdk-fbsvc-ef779cd6e3.json")
     firebase_admin.initialize_app(cred)
 except ValueError:
     pass
