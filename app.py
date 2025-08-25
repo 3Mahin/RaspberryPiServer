@@ -76,7 +76,7 @@ def get_base64_of_bin_file(file_path):
         data = f.read()
     return base64.b64encode(data).decode()
 
-image_path = "C:/DesktopFolders/summer2025/Courses(9th Semester)/cse331.1 MaQm/project/background.jpg"
+image_path = "background.jpg"
 image_base64 = get_base64_of_bin_file(image_path)
 
 # ✅ Set background image using CSS
