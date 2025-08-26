@@ -5,22 +5,14 @@ import pandas as pd
 import random
 import base64
 import firebase_admin
-import json
 from firebase_admin import credentials, firestore
 from datetime import timedelta
 
 # Firebase Initialization
-try:  
-    # Load credentials from Streamlit secrets
-    firebase_config = st.secrets["firebase"]
-    
-    # Convert to dict for credentials
-    cred_dict = dict(firebase_config)
-    
-    # Convert to actual credentials
-    cred = credentials.Certificate(cred_dict)
+try:
+    # Use the name of your provided JSON key file.
+    cred = credentials.Certificate("cse331-77111-firebase-adminsdk-fbsvc-74100017d0.json")
     firebase_admin.initialize_app(cred)
-
 except ValueError:
     pass
 
@@ -55,7 +47,7 @@ def fetch_firestore_data(collection_name):
     data = []
     for doc in docs:
         doc_data = doc.to_dict()
-        if 'timestamp' in doc_data and 'raw_data' in doc_data:
+        if 'timestamp' in doc_data and 'voltage' in doc_data:
             data.append(doc_data)
 
     if not data:
@@ -75,7 +67,7 @@ if side_page == "Home":
     st.subheader("Live Graph from Database")
 
     # Dynamic Graphing Logic
-    df = fetch_firestore_data('serial_data')
+    df = fetch_firestore_data('voltage')
 
     if not df.empty:
 
@@ -83,7 +75,7 @@ if side_page == "Home":
 
         fig, ax = plt.subplots()
         
-        ax.plot(df['timestamp'], df['raw_data'], label="VOLTAGE (V)", marker='.')
+        ax.plot(df['timestamp'], df['voltage'], label="VOLTAGE (V)", marker='.')
         ax.set_xlabel("Time")
         ax.set_ylabel("Voltage")
         ax.legend()
@@ -145,4 +137,3 @@ try:
     )
 except FileNotFoundError:
     st.warning("background.jpg not found. Skipping background image.")
-
