@@ -5,14 +5,22 @@ import pandas as pd
 import random
 import base64
 import firebase_admin
+import json
 from firebase_admin import credentials, firestore
 from datetime import timedelta
 
 # Firebase Initialization
-try:
-    # Use the name of your provided JSON key file.
-    cred = credentials.Certificate("cse331-77111-firebase-adminsdk-fbsvc-ef779cd6e3.json")
+try:  
+    # Load credentials from Streamlit secrets
+    firebase_config = st.secrets["firebase"]
+    
+    # Convert to dict for credentials
+    cred_dict = dict(firebase_config)
+    
+    # Convert to actual credentials
+    cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
+
 except ValueError:
     pass
 
